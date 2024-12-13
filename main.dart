@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart'; // CounterScreen을 포함하는 파일
+import 'timer_screen.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
+// Stless 선언
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Counter App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomepage(),
+      title: "My First App",
+      home: MyHomepage(),
     );
   }
 }
 
+// MyHomePage
 class MyHomepage extends StatefulWidget {
   const MyHomepage({super.key});
 
@@ -26,69 +27,99 @@ class MyHomepage extends StatefulWidget {
   State<MyHomepage> createState() => _MyHomepageState();
 }
 
-class _MyHomepageState extends State<MyHomepage> {
-  int _counter = 0;
+class _MyHomepageState extends State<MyHomepage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _index = 0;
 
-  void _showAlertDialog(BuildContext context, String message){
-    showDialog(context: context, builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Alert Dialog Test"),
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () {Navigator.of(context).pop();}, child: Text("확인")),
-        ],
-      );
-    });
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _navItems.length, vsync: this);
+    _tabController.addListener(tabListener);
   }
 
-  void _addCount() {
-    setState(() {
-      _counter++;
-    });
-
-    if (_counter == 10){
-      _showAlertDialog(context, "10회 클릭!");
-    }
+  @override
+  void dispose() {
+    _tabController.removeListener(tabListener);
+    _tabController.dispose(); // TabController 메모리 해제
+    super.dispose();
   }
 
-  void _resetCount() {
+  void tabListener() {
     setState(() {
-      _counter = 0;
-      _showAlertDialog(context, "리셋 완료");
+      _index = _tabController.index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("TEST!!"),
-        backgroundColor: Colors.blue,
+      appBar: AppBar(title: const Text("TEST")),
+      body: TabBarView(
+        physics: const NeverScrollableScrollPhysics(),
+        controller: _tabController,
+        children: const [
+          CounterScreen(), // 카운터 화면
+          TimerScreen(),   // 타이머 화면
+          // 추가 NavItem은 여기에도 기입
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // 중앙 정렬
-          children: [
-            Text("버튼 누른 횟수", style: TextStyle(fontSize: 20)),
-            Text('$_counter', style: TextStyle(fontSize: 30)), // 카운터 크기 조정
-            SizedBox(height: 20), // 간격 추가
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center, // 버튼을 중앙에 정렬
-              children: [
-                ElevatedButton(
-                  onPressed: _addCount,
-                  child: Text("클릭"),
-                ),
-                SizedBox(width: 20), // 버튼 간격 추가
-                ElevatedButton(
-                  onPressed: _resetCount,
-                  child: Text("리셋"),
-                ),
-              ],
-            ),
-          ],
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: Colors.blue, // 선택된 아이템 색상
+        unselectedItemColor: Colors.grey, // 선택되지 않은 아이템 색상
+
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
         ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 10,
+        ),
+        type: BottomNavigationBarType.fixed,
+        onTap: (int index) {
+          _tabController.animateTo(index);
+        },
+        currentIndex: _index,
+        items: _navItems.map((item) {
+          return BottomNavigationBarItem(
+            icon: Icon(
+              _index == item.index ? item.activeIcon : item.inactiveIcon,
+              color: _index == item.index ? Colors.blue : Colors.grey,
+            ),
+            label: item.label,
+          );
+        }).toList(),
       ),
     );
   }
 }
+
+class NavItem {
+  final int index;
+  final IconData activeIcon;
+  final IconData inactiveIcon;
+  final String label;
+
+  const NavItem({
+    required this.index,
+    required this.activeIcon,
+    required this.inactiveIcon,
+    required this.label,
+  });
+}
+
+const _navItems = [
+  NavItem(
+    index: 0,
+    activeIcon: Icons.home,
+    inactiveIcon: Icons.home_outlined,
+    label: 'Counter',
+  ),
+  NavItem(
+    index: 1,
+    activeIcon: Icons.calendar_today,
+    inactiveIcon: Icons.calendar_today_outlined,
+    label: 'Timer',
+  ),
+  // 추가적인 NavItem을 여기에 추가할 수 있습니다.
+];
